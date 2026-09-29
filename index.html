@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ninja Nhảy Bóng Đến Điểm B</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #game-container {
+      position: relative;
+      width: 900px;
+      height: 450px;
+      background: #e8f7ff;
+      border: 4px solid #333;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    /* Điểm A & Điểm B */
+    .point {
+      position: absolute;
+      bottom: 40px;
+      width: 80px;
+      height: 60px;
+      background: #8B4513;
+      color: #fff;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 2px solid #5c2d0c;
+      z-index: 2;
+    }
+    #point-a { left: 40px; }
+    #point-b { right: 40px; background: #2e7d32; border-color: #1b5e20; }
+
+    /* Các quả bóng */
+    .balls-container {
+      position: absolute;
+      bottom: 40px;
+      left: 150px;
+      right: 150px;
+      height: 60px;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+    }
+
+    .ball {
+      width: 45px;
+      height: 45px;
+      background: radial-gradient(circle at 15px 15px, #ff5252, #b71c1c);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    /* Nhân vật Ninja */
+    #ninja {
+      position: absolute;
+      width: 40px;
+      height: 50px;
+      background: #212121;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 10;
+      transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    /* Băng đeo mắt Ninja */
+    #ninja::before {
+      content: '';
+      width: 100%;
+      height: 10px;
+      background: #d32f2f;
+      position: absolute;
+      top: 10px;
+    }
+
+    /* Controls */
+    #controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+    }
+
+    button {
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px #e65100;
+      transition: all 0.1s ease;
+    }
+
+    button:active {
+      transform: translateY(4px);
+      box-shadow: 0 0 #e65100;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* Modal Quiz (Phần làm bài) */
+    #quiz-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      color: white;
+    }
+
+    .quiz-box {
+      background: white;
+      color: #333;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .option-btn {
+      padding: 10px;
+      background: #2196F3;
+      box-shadow: 0 3px #0d47a1;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- Điểm xuất phát A -->
+    <div id="point-a" class="point">Điểm A</div>
+
+    <!-- Hàng bóng -->
+    <div class="balls-container" id="balls-container">
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+      <div class="ball"></div>
+    </div>
+
+    <!-- Điểm đích B -->
+    <div id="point-b" class="point">Điểm B</div>
+
+    <!-- Nhân vật Ninja -->
+    <div id="ninja">Ninja</div>
+
+    <!-- Modal Bài tập / Quiz -->
+    <div id="quiz-modal">
+      <div class="quiz-box">
+        <h2>Chúc mừng bạn đã đến Điểm B!</h2>
+        <p style="margin-top: 10px;">Câu hỏi: 5 + 3 = ?</p>
+        <div class="quiz-options">
+          <button class="option-btn" onclick="answerQuiz(true)">8</button>
+          <button class="option-btn" onclick="answerQuiz(false)">6</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button id="btn-jump" onclick="handleJump()">NHẢY</button>
+    <button id="btn-reset" onclick="resetGame()">LÀM MỚI</button>
+  </div>
+
+  <script>
+    const ninja = document.getElementById('ninja');
+    const balls = document.querySelectorAll('.ball');
+    const pointA = document.getElementById('point-a');
+    const pointB = document.getElementById('point-b');
+    const quizModal = document.getElementById('quiz-modal');
+    const btnJump = document.getElementById('btn-jump');
+
+    // Các biến trạng thái
+    let currentStep = -1; // -1: Ở điểm A, 0 -> N-1: Trên các quả bóng, N: Ở điểm B
+    const totalBalls = balls.length;
+    let isAnimating = false;
+
+    // Đặt Ninja về vị trí điểm A ban đầu
+    function initNinjaPosition() {
+      currentStep = -1;
+      isAnimating = false;
+      btnJump.disabled = false;
+      quizModal.style.display = 'none';
+
+      const rectA = pointA.getBoundingClientRect();
+      const containerRect = document.getElementById('game-container').getBoundingClientRect();
+
+      ninja.style.transition = 'none';
+      ninja.style.left = `${rectA.left - containerRect.left + (rectA.width / 2) - 20}px`;
+      ninja.style.top = `${rectA.top - containerRect.top - 50}px`;
+    }
+
+    // Xử lý sự kiện khi nhấn nút "NHẢY"
+    function handleJump() {
+      if (isAnimating) return;
+
+      isAnimating = true;
+      currentStep++;
+
+      if (currentStep < totalBalls) {
+        // 1. Nhảy qua từng quả bóng
+        jumpToBall(currentStep);
+      } else if (currentStep === totalBalls) {
+        // 2. Khi ở quả bóng cuối cùng và nhấn Nhảy -> Nhảy về điểm B
+        jumpToPointB();
+      }
+    }
+
+    // Hàm di chuyển Ninja tới quả bóng index
+    function jumpToBall(index) {
+      const targetBall = balls[index];
+      const ballRect = targetBall.getBoundingClientRect();
+      const containerRect = document.getElementById('game-container').getBoundingClientRect();
+
+      const targetLeft = ballRect.left - containerRect.left + (ballRect.width / 2) - 20;
+      const targetTop = ballRect.top - containerRect.top - 50;
+
+      // Hiệu ứng quỹ đạo nhảy (vồng lên cao rồi rơi xuống)
+      ninja.style.transition = 'all 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+      ninja.style.left = `${targetLeft}px`;
+      ninja.style.top = `${targetTop}px`;
+
+      setTimeout(() => {
+        isAnimating = false;
+      }, 500);
+    }
+
+    // Hàm di chuyển Ninja đáp xuống điểm B
+    function jumpToPointB() {
+      const rectB = pointB.getBoundingClientRect();
+      const containerRect = document.getElementById('game-container').getBoundingClientRect();
+
+      const targetLeft = rectB.left - containerRect.left + (rectB.width / 2) - 20;
+      const targetTop = rectB.top - containerRect.top - 50;
+
+      ninja.style.transition = 'all 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+      ninja.style.left = `${targetLeft}px`;
+      ninja.style.top = `${targetTop}px`;
+
+      // Đợi Ninja đáp đất hoàn tất mới hiển thị Phần làm bài
+      setTimeout(() => {
+        isAnimating = false;
+        btnJump.disabled = true;
+        startQuizPhase();
+      }, 600);
+    }
+
+    // Hiển thị giao diện bài tập
+    function startQuizPhase() {
+      quizModal.style.display = 'flex';
+    }
+
+    // Xử lý trả lời câu hỏi
+    function answerQuiz(isCorrect) {
+      if (isCorrect) {
+        alert("Chính xác! Bạn thật giỏi.");
+      } else {
+        alert("Chưa đúng rồi, thử lại nhé!");
+      }
+      resetGame();
+    }
+
+    // Reset trò chơi về lại điểm A
+    function resetGame() {
+      initNinjaPosition();
+    }
+
+    // Khởi tạo vị trí ban đầu khi tải trang
+    window.onload = initNinjaPosition;
+  </script>
+</body>
+</html>
