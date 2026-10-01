@@ -346,7 +346,7 @@
             100% { transform: scale(1.08); }
         }
 
-        /* Nút nhảy thủ công bên phải (Giảm kích thước 50%) */
+        /* Nút nhảy thủ công bên phải */
         #manual-controls {
             position: absolute;
             bottom: 20px;
@@ -364,7 +364,7 @@
             border-radius: 25px;
         }
 
-        /* Nút Kết thúc bài làm ngay lập tức bên trái (Giảm kích thước 50%) */
+        /* Nút Kết thúc bài làm ngay lập tức bên trái */
         #early-finish-controls {
             position: absolute;
             bottom: 20px;
@@ -1125,6 +1125,7 @@
                 localStorage.setItem('ninja_player_name', nameVal);
             }
 
+            // Điểm 1: Bỏ màn hình chờ 60 giây, bấm "BẮT ĐẦU" nhảy thẳng vào ghi nhớ
             startJourney() {
                 soundSynth.init();
                 this.readSettings();
@@ -1132,29 +1133,7 @@
                 this.spawnBalloons();
                 document.getElementById('start-overlay').style.display = 'none';
                 
-                this.ninja.state = 'WAITING';
-                document.getElementById('ready-control').style.display = 'block';
-
-                this.countdownTime = 60;
-                const timerEl = document.getElementById('countdown-timer');
-                timerEl.innerText = `${this.countdownTime}s`;
-
-                if (this.countdownInterval) clearInterval(this.countdownInterval);
-                this.countdownInterval = setInterval(() => {
-                    this.countdownTime--;
-                    timerEl.innerText = `${this.countdownTime}s`;
-                    
-                    if (this.countdownTime > 10) {
-                        soundSynth.play('tick');
-                    } else if (this.countdownTime > 0) {
-                        soundSynth.play('urgent-tick');
-                    }
-
-                    if (this.countdownTime <= 0) {
-                        clearInterval(this.countdownInterval);
-                        this.triggerFirstJump();
-                    }
-                }, 1000);
+                this.triggerFirstJump();
             }
 
             triggerFirstJump() {
@@ -1185,8 +1164,35 @@
                     this.ninja.updateSprite('TRANSFERRING');
                     this.stateStartTime = performance.now();
                 } else {
-                    this.finishGameDirectly();
+                    // Điểm 3: Nhảy về Đích điểm B trước khi chuyển sang màn hình làm bài
+                    this.jumpToFinishB();
                 }
+            }
+
+            // Điểm 2: Phím mũi tên trái nhảy lùi lại 1 bóng
+            jumpToPreviousBalloon() {
+                if (this.currentBalloonIndex <= 0) return;
+                this.currentBalloonIndex--;
+                soundSynth.play('jump');
+                const target = this.balloons[this.currentBalloonIndex];
+                this.transferStart = { x: this.ninja.x + CONFIG.ninja.handPoint.x, y: this.ninja.y + CONFIG.ninja.handPoint.y };
+                this.transferTarget = target.getGrabWorldPoint();
+                this.ninja.state = 'TRANSFERRING';
+                this.ninja.updateSprite('TRANSFERRING');
+                this.stateStartTime = performance.now();
+            }
+
+            // Điểm 3: Xử lý hiệu ứng Ninja nhảy tiếp từ bóng cuối về Đích B
+            jumpToFinishB() {
+                soundSynth.play('jump');
+                const targetX = CONFIG.platforms.pointB.x + CONFIG.platforms.pointB.width / 2;
+                const targetY = CONFIG.platforms.pointB.y;
+
+                this.transferStart = { x: this.ninja.x + CONFIG.ninja.handPoint.x, y: this.ninja.y + CONFIG.ninja.handPoint.y };
+                this.transferTarget = { x: targetX, y: targetY };
+                this.ninja.state = 'FINISHING';
+                this.ninja.updateSprite('FINISHING');
+                this.stateStartTime = performance.now();
             }
 
             finishGameDirectly() {
@@ -1202,7 +1208,7 @@
                 this.showRecallScreen();
             }
 
-            // Nhảy về quả bóng đầu tiên (Bóng số 1 - index 0) khi ấn phím Space ở chế độ thủ công
+            // Phím Space ở chế độ thủ công: quay về từ đầu (bóng số 1)
             jumpToFirstBalloon() {
                 if (this.balloons.length === 0) return;
                 this.currentBalloonIndex = 0;
@@ -1251,6 +1257,8 @@
                             this.ninja.rotation = 0;
                             this.stateStartTime = now;
                             soundSynth.play('grab');
+                        } else if (this.ninja.state === 'FINISHING') {
+                            this.finishGameDirectly();
                         }
                     }
                 }
@@ -1307,8 +1315,11 @@
                     } else if (this.ninja.state === 'HANGING' && GAME_SETTINGS.mode === 'manual') {
                         if (e.code === 'ArrowRight') {
                             this.transitionToNext();
+                        } else if (e.code === 'ArrowLeft') {
+                            // Điểm 2: Phím mũi tên trái lùi lại 1 bóng
+                            this.jumpToPreviousBalloon();
                         } else if (e.code === 'Space') {
-                            // Phím Cách (Space) khiến người chơi bay về quả bóng đầu tiên để ôn tập
+                            // Phím Cách (Space) bay về từ đầu (bóng số 1)
                             this.jumpToFirstBalloon();
                         }
                     }
@@ -1326,7 +1337,6 @@
                 document.getElementById('submit-btn').style.display = 'inline-block';
                 document.getElementById('retry-btn').style.display = 'none';
 
-                // Màn hình chấm điểm: Giờ:Phút Ngày/Tháng/Năm + Tên + Thời gian ghi nhớ
                 const timeInfo = `⏱ ${this.finishTimeStamp} | Người chơi: ${GAME_SETTINGS.playerName} | Thời gian ghi nhớ: ${this.playDurationSec}s`;
                 document.getElementById('completion-time-display').innerText = timeInfo;
 
